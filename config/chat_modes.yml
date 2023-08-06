@@ -1,3 +1,9 @@
+custom_prompt:
+  name: Custom
+  model_type: text
+  welcome_message: Hi, I'm <b>Custom Assistant</b>. How can I help you?
+  parse_mode: html
+
 assistant:
   name: 👩🏼‍🎓 General Assistant
   model_type: text

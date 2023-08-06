@@ -201,7 +201,7 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
     if await is_previous_message_not_answered_yet(update, context): return
 
     user_id = update.message.from_user.id
-    chat_mode = db.get_user_attribute(user_id, "current_chat_mode")  #  note: Мод custom_promt
+    chat_mode = db.get_user_attribute(user_id, "current_chat_mode")  #  note: Мод custom_prompt
 
     if chat_mode == "artist":
         await generate_image_handle(update, context, message=message)
@@ -214,6 +214,12 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
                 db.start_new_dialog(user_id)
                 await update.message.reply_text(f"Starting new dialog due to timeout (<b>{config.chat_modes[chat_mode]['name']}</b> mode) ✅", parse_mode=ParseMode.HTML)
         db.set_user_attribute(user_id, "last_interaction", datetime.now())
+        
+        print(db.get_user_attribute(user_id, "state"))
+        if "prompt_input" == db.get_user_attribute(user_id, "state"):
+            db.set_user_attribute(user_id, "custom_prompt", _message)
+            db.set_user_attribute(user_id, "state", "")
+            return
 
         # in case of CancelledError
         n_input_tokens, n_output_tokens = 0, 0
@@ -409,7 +415,7 @@ async def new_dialog_handle(update: Update, context: CallbackContext):
     db.start_new_dialog(user_id)
     await update.message.reply_text("Starting new dialog ✅")
 
-    chat_mode = db.get_user_attribute(user_id, "current_chat_mode") # todo: Нормальное сообщение для custom_promt
+    chat_mode = db.get_user_attribute(user_id, "current_chat_mode") # todo: Нормальное сообщение для custom_prompt
     await update.message.reply_text(f"{config.chat_modes[chat_mode]['welcome_message']}", parse_mode=ParseMode.HTML)
 
 
@@ -469,6 +475,10 @@ async def show_custom_prompt_handle(update: Update, context: CallbackContext):
     user_id = update.message.from_user.id
     db.set_user_attribute(user_id, "last_interaction", datetime.now())
 
+    # todo Костыльный вариант сохранения состояния. Так быстрее всего проверить, мб надо будет нормальные состояния завести
+    db.set_user_attribute(user_id, "state", "prompt_input")
+
+
     await update.message.reply_text("Введите промт", parse_mode=ParseMode.HTML) # todo текст исправить
 
 async def show_chat_modes_handle(update: Update, context: CallbackContext):
@@ -512,7 +522,7 @@ async def set_chat_mode_handle(update: Update, context: CallbackContext):
     await query.answer()
 
     chat_mode = query.data.split("|")[1]
-    if chat_mode == "custom_promt":
+    if chat_mode == "custom_prompt":
         await update.message.reply_text("Введите промт", parse_mode=ParseMode.HTML) # todo Режим ввода промта
 
     db.set_user_attribute(user_id, "current_chat_mode", chat_mode)
@@ -524,13 +534,13 @@ async def set_chat_mode_handle(update: Update, context: CallbackContext):
         parse_mode=ParseMode.HTML
     )
 
-async def set_custom_promt_handle(update: Update, context: CallbackContext):
+async def set_custom_prompt_handle(update: Update, context: CallbackContext):
     await register_user_if_not_exists(update.callback_query, context, update.callback_query.from_user)
     user_id = update.callback_query.from_user.id
     db.set_user_attribute(user_id, "last_interaction", datetime.now())
 
 
-    # db.set_user_attribute(user_id, "custom_promt", promt) # todo
+    # db.set_user_attribute(user_id, "custom_prompt", promt) # todo
 
 def get_settings_menu(user_id: int):
     current_model = db.get_user_attribute(user_id, "current_model")
@@ -709,7 +719,6 @@ def run_bot() -> None:
     application.add_handler(CallbackQueryHandler(set_chat_mode_handle, pattern="^set_chat_mode"))
 
     application.add_handler(CommandHandler("set_custom_prompt", show_custom_prompt_handle, filters=user_filter))
-    application.add_handler(CallbackQueryHandler(show_chat_modes_callback_handle, pattern="^show_chat_modes"))
 
     application.add_handler(CommandHandler("settings", settings_handle, filters=user_filter))
     application.add_handler(CallbackQueryHandler(set_settings_handle, pattern="^set_settings"))
