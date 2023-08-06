@@ -215,6 +215,12 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
                 await update.message.reply_text(f"Starting new dialog due to timeout (<b>{config.chat_modes[chat_mode]['name']}</b> mode) ✅", parse_mode=ParseMode.HTML)
         db.set_user_attribute(user_id, "last_interaction", datetime.now())
 
+        if "prompt_input" == db.get_user_attribute(user_id, "state"):
+            db.set_user_attribute(user_id, "custom_prompt", _message)
+            db.set_user_attribute(user_id, "state", "")
+            await update.message.reply_text("How can I help you?")
+            return
+
         # in case of CancelledError
         n_input_tokens, n_output_tokens = 0, 0
         current_model = db.get_user_attribute(user_id, "current_model")
@@ -236,7 +242,7 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
                 "markdown": ParseMode.MARKDOWN
             }[config.chat_modes[chat_mode]["parse_mode"]]
 
-            chatgpt_instance = openai_utils.ChatGPT(model=current_model)
+            chatgpt_instance = openai_utils.ChatGPT(db, user_id, current_model)
             if config.enable_message_streaming:
                 gen = chatgpt_instance.send_message_stream(_message, dialog_messages=dialog_messages, chat_mode=chat_mode)
             else:
@@ -410,6 +416,11 @@ async def new_dialog_handle(update: Update, context: CallbackContext):
     await update.message.reply_text("Starting new dialog ✅")
 
     chat_mode = db.get_user_attribute(user_id, "current_chat_mode")
+    if chat_mode == "custom_prompt":
+        db.set_user_attribute(user_id, "state", "prompt_input")
+        await update.message.reply_text("Insert custom prompt", parse_mode=ParseMode.HTML)
+        return
+
     await update.message.reply_text(f"{config.chat_modes[chat_mode]['welcome_message']}", parse_mode=ParseMode.HTML)
 
 
@@ -462,7 +473,6 @@ def get_chat_mode_menu(page_index: int):
 
     return text, reply_markup
 
-
 async def show_chat_modes_handle(update: Update, context: CallbackContext):
     await register_user_if_not_exists(update, context, update.message.from_user)
     if await is_previous_message_not_answered_yet(update, context): return
@@ -508,12 +518,16 @@ async def set_chat_mode_handle(update: Update, context: CallbackContext):
     db.set_user_attribute(user_id, "current_chat_mode", chat_mode)
     db.start_new_dialog(user_id)
 
+    if chat_mode == "custom_prompt":
+        db.set_user_attribute(user_id, "state", "prompt_input")
+        await context.bot.send_message(update.callback_query.message.chat.id, "Insert custom prompt", parse_mode=ParseMode.HTML)
+        return
+
     await context.bot.send_message(
         update.callback_query.message.chat.id,
         f"{config.chat_modes[chat_mode]['welcome_message']}",
         parse_mode=ParseMode.HTML
     )
-
 
 def get_settings_menu(user_id: int):
     current_model = db.get_user_attribute(user_id, "current_model")

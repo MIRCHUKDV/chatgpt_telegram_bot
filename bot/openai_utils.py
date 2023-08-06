@@ -15,9 +15,11 @@ OPENAI_COMPLETION_OPTIONS = {
 
 
 class ChatGPT:
-    def __init__(self, model="gpt-3.5-turbo"):
+    def __init__(self, db, user_id, model="gpt-3.5-turbo"):
         assert model in {"text-davinci-003", "gpt-3.5-turbo", "gpt-4"}, f"Unknown model: {model}"
         self.model = model
+        self.db = db # note: Внешние зависимости можно убрать. Но тогда бы убрал и зависимость от config
+        self.user_id = user_id
 
     async def send_message(self, message, dialog_messages=[], chat_mode="assistant"):
         if chat_mode not in config.chat_modes.keys():
@@ -112,7 +114,10 @@ class ChatGPT:
         yield "finished", answer, (n_input_tokens, n_output_tokens), n_first_dialog_messages_removed  # sending final answer
 
     def _generate_prompt(self, message, dialog_messages, chat_mode):
-        prompt = config.chat_modes[chat_mode]["prompt_start"]
+        if chat_mode == "custom_prompt":
+            prompt = self.db.get_user_attribute(self.user_id, "custom_prompt")
+        else:
+            prompt = config.chat_modes[chat_mode]["prompt_start"]
         prompt += "\n\n"
 
         # add chat context
@@ -129,7 +134,10 @@ class ChatGPT:
         return prompt
 
     def _generate_prompt_messages(self, message, dialog_messages, chat_mode):
-        prompt = config.chat_modes[chat_mode]["prompt_start"]
+        if chat_mode == "custom_prompt":
+            prompt = self.db.get_user_attribute(self.user_id, "custom_prompt")
+        else:
+            prompt = config.chat_modes[chat_mode]["prompt_start"]
 
         messages = [{"role": "system", "content": prompt}]
         for dialog_message in dialog_messages:
