@@ -15,9 +15,11 @@ OPENAI_COMPLETION_OPTIONS = {
 
 
 class ChatGPT:
-    def __init__(self, model="gpt-3.5-turbo"):
+    def __init__(self, db, user_id, model="gpt-3.5-turbo"):
         assert model in {"text-davinci-003", "gpt-3.5-turbo", "gpt-4"}, f"Unknown model: {model}"
         self.model = model
+        self.db = db # note: Внешние зависимости можно убрать. Но тогда бы убрал и зависимость от config
+        self.user_id = user_id
 
     async def send_message(self, message, dialog_messages=[], chat_mode="assistant"):
         if chat_mode not in config.chat_modes.keys():
@@ -112,7 +114,10 @@ class ChatGPT:
         yield "finished", answer, (n_input_tokens, n_output_tokens), n_first_dialog_messages_removed  # sending final answer
 
     def _generate_prompt(self, message, dialog_messages, chat_mode):
-        prompt = config.chat_modes[chat_mode]["prompt_start"]
+        if chat_mode == "custom_promt":
+            prompt = self.db.get_user_attribute(self.user_id, "custom_promt")
+        else:
+            prompt = config.chat_modes[chat_mode]["prompt_start"]
         prompt += "\n\n"
 
         # add chat context
@@ -120,21 +125,24 @@ class ChatGPT:
             prompt += "Chat:\n"
             for dialog_message in dialog_messages:
                 prompt += f"User: {dialog_message['user']}\n"
-                prompt += f"Assistant: {dialog_message['bot']}\n"
+                prompt += f"Assistant: {dialog_message['bot']}\n"  # todo: Подставлять имя собеседника для лучшей реалистичности
 
         # current message
         prompt += f"User: {message}\n"
-        prompt += "Assistant: "
+        prompt += "Assistant: "  # todo: Подставлять имя собеседника для лучшей реалистичности
 
         return prompt
 
     def _generate_prompt_messages(self, message, dialog_messages, chat_mode):
-        prompt = config.chat_modes[chat_mode]["prompt_start"]
+        if chat_mode == "custom_promt":
+            prompt = self.db.get_user_attribute(self.user_id, "custom_promt")
+        else:
+            prompt = config.chat_modes[chat_mode]["prompt_start"]
 
         messages = [{"role": "system", "content": prompt}]
         for dialog_message in dialog_messages:
             messages.append({"role": "user", "content": dialog_message["user"]})
-            messages.append({"role": "assistant", "content": dialog_message["bot"]})
+            messages.append({"role": "assistant", "content": dialog_message["bot"]})  # todo: Подставлять имя собеседника для лучшей реалистичности
         messages.append({"role": "user", "content": message})
 
         return messages
