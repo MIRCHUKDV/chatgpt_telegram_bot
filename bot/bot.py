@@ -169,6 +169,7 @@ async def retry_handle(update: Update, context: CallbackContext):
 
     user_id = update.message.from_user.id
     db.set_user_attribute(user_id, "last_interaction", datetime.now())
+    db.set_user_attribute(user_id, "state", "")
 
     dialog_messages = db.get_dialog_messages(user_id, dialog_id=None)
     if len(dialog_messages) == 0:
@@ -411,14 +412,15 @@ async def new_dialog_handle(update: Update, context: CallbackContext):
 
     user_id = update.message.from_user.id
     db.set_user_attribute(user_id, "last_interaction", datetime.now())
+    db.set_user_attribute(user_id, "state", "")
 
     db.start_new_dialog(user_id)
     await update.message.reply_text("Starting new dialog ✅")
 
     chat_mode = db.get_user_attribute(user_id, "current_chat_mode")
+
     if chat_mode == "custom_prompt":
-        db.set_user_attribute(user_id, "state", "prompt_input")
-        await update.message.reply_text("Insert custom prompt", parse_mode=ParseMode.HTML)
+        await update.message.reply_text(f'Current prompt: {db.get_user_attribute(user_id, "custom_prompt")}', parse_mode=ParseMode.HTML)
         return
 
     await update.message.reply_text(f"{config.chat_modes[chat_mode]['welcome_message']}", parse_mode=ParseMode.HTML)
