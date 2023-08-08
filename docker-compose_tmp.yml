@@ -12,12 +12,13 @@ services:
     # TODO: add auth
 
   chatgpt_telegram_bot:
-    container_name: chatgpt_telegram_bot
+    container_name: meowgpt_office
+    image: maindian/meowgpt:office
     command: python3 bot/bot.py
     restart: always
-    build:
-      context: "."
-      dockerfile: Dockerfile
+    #   build:
+    #     context: "."
+    #     dockerfile: Dockerfile
     depends_on:
       - mongo
 
