@@ -37,6 +37,7 @@ import openai_utils
 
 # setup
 db = database.Database()
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 user_semaphores = {}
@@ -193,6 +194,9 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
         return
 
     _message = message or update.message.text
+    logger.info(_message)
+    logger.info("сообщение получено")
+
 
     # remove bot mention (in group chats)
     if update.message.chat.type != "private":
