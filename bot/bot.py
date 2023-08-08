@@ -197,7 +197,6 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
     logger.info(_message)
     logger.info("сообщение получено")
 
-
     # remove bot mention (in group chats)
     if update.message.chat.type != "private":
         _message = _message.replace("@" + context.bot.username, "").strip()
