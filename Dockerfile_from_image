@@ -1,0 +1,6 @@
+FROM maindian/meowgpt
+
+COPY . /code
+WORKDIR /code
+
+CMD ["bash"]

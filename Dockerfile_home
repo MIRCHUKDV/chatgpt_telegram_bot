@@ -1,0 +1,19 @@
+FROM python:3.9
+
+ENV PYTHONFAULTHANDLER=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONHASHSEED=random
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PIP_NO_CACHE_DIR=off
+ENV PIP_DISABLE_PIP_VERSION_CHECK=on
+ENV PIP_DEFAULT_TIMEOUT=100
+
+RUN mkdir -p /code
+ADD . /code
+COPY requirements.txt /code
+COPY /env_home/config /code/config/
+WORKDIR /code
+
+RUN pip3 install -r requirements.txt --no-cache-dir
+
+CMD ["bash"]
