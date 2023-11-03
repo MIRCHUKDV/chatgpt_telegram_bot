@@ -11,19 +11,25 @@
     mv config/config.example.env config/config.env
     ```
 
+4. How to run/deploy
+
 4a. Local **run**:
+
+ - run command:
     ```bash
     docker-compose --env-file config/config.env up --build -d
     ```
-4b. **Home version**
 
-Creating image and uploading it to DockerHub:
+
+4b. **Home version**
+- Launch docker application
+- Creating image and uploading it to DockerHub:
 ```bash
 docker build -f Dockerfile_home -t maindian/meowgpt:home .
 docker push maindian/meowgpt:home
 ```
 
-Building container based on images from DockerHub (described in yml-file):
+- Building container based on images from DockerHub (described in yml-file):
 ```bash
 docker-compose -f env_home/docker-compose_home.yml up --build -d
 ```
@@ -33,14 +39,14 @@ docker-compose -f env_home/docker-compose_home.yml --env-file env_home/config/co
 ```
 
 4c. **Office version**:
-
-Creating image and uploading it to DockerHub:
+- Launch docker application
+- Creating image and uploading it to DockerHub:
 ```bash
 docker build -f Dockerfile_office -t maindian/meowgpt:office .
 docker push maindian/meowgpt:office
 ```
 
-Building container based on images from DockerHub (described in yml-file):
+- Building container based on images from DockerHub (described in yml-file):
 ```bash
 docker-compose -f env_office/docker-compose_office.yml up --build -d
 ```
