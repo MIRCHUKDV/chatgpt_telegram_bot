@@ -131,7 +131,10 @@ dmypy.json
 # Custom
 config/config.yml
 config/config.env
+env_home/config/
+env_office/config/
 
 docker-compose.dev.yml
+Dockerfile_original
 
 mongodb/
