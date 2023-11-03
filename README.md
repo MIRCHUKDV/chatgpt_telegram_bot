@@ -31,6 +31,10 @@ docker push maindian/meowgpt:home
 - check actual status of this image and tag on dockerhub
 
 !run next command on server!
+- dl actual image from dockerhub:
+```bash
+docker pull maindian/meowgpt:home
+```
 - stop previous containers (docker ps + docker stop + docker rm)
 - Building container based on images from DockerHub (described in yml-file):
 ```bash
@@ -51,6 +55,10 @@ docker push maindian/meowgpt:office
 - check actual status of this image and tag on dockerhub
 
 !run next command on server!
+- dl actual image from dockerhub:
+```bash
+docker pull maindian/meowgpt:office 
+```
 - stop previous containers (docker ps + docker stop + docker rm)
 - Building container based on images from DockerHub (described in yml-file):
 ```bash
@@ -59,5 +67,10 @@ docker-compose -f env_office/docker-compose_office.yml up --build -d
 или так:
 ```bash
 docker-compose -f env_office/docker-compose_office.yml --env-file env_office/config/config.env up --build -d
+```
+
+on current VM (and check notes file on linux VM):
+```bash
+docker-compose -f office/docker-compose_office.yml --env-file office/config_office.env up --build -d
 ```
 
