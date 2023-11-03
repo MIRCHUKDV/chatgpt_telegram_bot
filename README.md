@@ -28,7 +28,10 @@
 docker build -f Dockerfile_home -t maindian/meowgpt:home .
 docker push maindian/meowgpt:home
 ```
+- check actual status of this image and tag on dockerhub
 
+!run next command on server!
+- stop previous containers (docker ps + docker stop + docker rm)
 - Building container based on images from DockerHub (described in yml-file):
 ```bash
 docker-compose -f env_home/docker-compose_home.yml up --build -d
@@ -45,7 +48,10 @@ docker-compose -f env_home/docker-compose_home.yml --env-file env_home/config/co
 docker build -f Dockerfile_office -t maindian/meowgpt:office .
 docker push maindian/meowgpt:office
 ```
+- check actual status of this image and tag on dockerhub
 
+!run next command on server!
+- stop previous containers (docker ps + docker stop + docker rm)
 - Building container based on images from DockerHub (described in yml-file):
 ```bash
 docker-compose -f env_office/docker-compose_office.yml up --build -d
