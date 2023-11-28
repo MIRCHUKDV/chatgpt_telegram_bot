@@ -17,7 +17,7 @@
 
  - run command:
     ```bash
-    docker-compose --env-file config/config.env up --build -d
+    docker-compose -f .\docker-compose_office.yml --env-file env_office/config/config.env up --build -d
     ```
 
 
