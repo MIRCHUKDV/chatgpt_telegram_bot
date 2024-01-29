@@ -1,24 +1,27 @@
 import config
 
 import tiktoken
-import openai
-openai.api_key = config.openai_api_key
+from openai import AsyncOpenAI, BadRequestError
+
+
+cl_async = AsyncOpenAI(api_key=config.openai_api_key)
 
 
 OPENAI_COMPLETION_OPTIONS = {
-    "temperature": 0.7,
+    "temperature": 1.0,
     "max_tokens": 1000,
     "top_p": 1,
     "frequency_penalty": 0,
-    "presence_penalty": 0
+    "presence_penalty": 0,
+    "timeout": 60.0,
 }
 
 
 class ChatGPT:
     def __init__(self, db, user_id, model="gpt-3.5-turbo"):
-        assert model in {"text-davinci-003", "gpt-3.5-turbo", "gpt-4"}, f"Unknown model: {model}"
+        assert model in {"text-davinci-003", "gpt-3.5-turbo", "gpt-4-1106-preview"}, f"Unknown model: {model}"
         self.model = model
-        self.db = db # note: Внешние зависимости можно убрать. Но тогда бы убрал и зависимость от config
+        self.db = db  # Note: Внешние зависимости можно убрать. Но тогда бы убрал и зависимость от config
         self.user_id = user_id
 
     async def send_message(self, message, dialog_messages=[], chat_mode="assistant"):
@@ -29,18 +32,18 @@ class ChatGPT:
         answer = None
         while answer is None:
             try:
-                if self.model in {"gpt-3.5-turbo", "gpt-4"}:
+                if self.model in {"gpt-3.5-turbo", "gpt-4-1106-preview"}:
                     messages = self._generate_prompt_messages(message, dialog_messages, chat_mode)
-                    r = await openai.ChatCompletion.acreate(
+                    r = await cl_async.chat.completions.create(
                         model=self.model,
                         messages=messages,
                         **OPENAI_COMPLETION_OPTIONS
                     )
-                    answer = r.choices[0].message["content"]
+                    answer = r.choices[0].message.content
                 elif self.model == "text-davinci-003":
                     prompt = self._generate_prompt(message, dialog_messages, chat_mode)
-                    r = await openai.Completion.acreate(
-                        engine=self.model,
+                    r = await cl_async.completions.create(
+                        model=self.model,
                         prompt=prompt,
                         **OPENAI_COMPLETION_OPTIONS
                     )
@@ -50,7 +53,7 @@ class ChatGPT:
 
                 answer = self._postprocess_answer(answer)
                 n_input_tokens, n_output_tokens = r.usage.prompt_tokens, r.usage.completion_tokens
-            except openai.error.InvalidRequestError as e:  # too many tokens
+            except BadRequestError as e:  # too many tokens
                 if len(dialog_messages) == 0:
                     raise ValueError("Dialog messages is reduced to zero, but still has too many tokens to make completion") from e
 
@@ -69,9 +72,9 @@ class ChatGPT:
         answer = None
         while answer is None:
             try:
-                if self.model in {"gpt-3.5-turbo", "gpt-4"}:
+                if self.model in {"gpt-3.5-turbo", "gpt-4-1106-preview"}:
                     messages = self._generate_prompt_messages(message, dialog_messages, chat_mode)
-                    r_gen = await openai.ChatCompletion.acreate(
+                    r_gen = await cl_async.chat.completions.create(
                         model=self.model,
                         messages=messages,
                         stream=True,
@@ -81,15 +84,15 @@ class ChatGPT:
                     answer = ""
                     async for r_item in r_gen:
                         delta = r_item.choices[0].delta
-                        if "content" in delta:
+                        if getattr(delta, "content"):
                             answer += delta.content
                             n_input_tokens, n_output_tokens = self._count_tokens_from_messages(messages, answer, model=self.model)
                             n_first_dialog_messages_removed = n_dialog_messages_before - len(dialog_messages)
                             yield "not_finished", answer, (n_input_tokens, n_output_tokens), n_first_dialog_messages_removed
                 elif self.model == "text-davinci-003":
                     prompt = self._generate_prompt(message, dialog_messages, chat_mode)
-                    r_gen = await openai.Completion.acreate(
-                        engine=self.model,
+                    r_gen = await cl_async.completions.create(
+                        model=self.model,
                         prompt=prompt,
                         stream=True,
                         **OPENAI_COMPLETION_OPTIONS
@@ -104,7 +107,7 @@ class ChatGPT:
 
                 answer = self._postprocess_answer(answer)
 
-            except openai.error.InvalidRequestError as e:  # too many tokens
+            except BadRequestError as e:  # too many tokens
                 if len(dialog_messages) == 0:
                     raise e
 
@@ -157,7 +160,7 @@ class ChatGPT:
         if model == "gpt-3.5-turbo":
             tokens_per_message = 4  # every message follows <im_start>{role/name}\n{content}<im_end>\n
             tokens_per_name = -1  # if there's a name, the role is omitted
-        elif model == "gpt-4":
+        elif model == "gpt-4-1106-preview":
             tokens_per_message = 3
             tokens_per_name = 1
         else:
@@ -189,16 +192,16 @@ class ChatGPT:
 
 
 async def transcribe_audio(audio_file):
-    r = await openai.Audio.atranscribe("whisper-1", audio_file)
-    return r["text"]
+    r = await cl_async.audio.transcriptions.create(audio_file, model="whisper-1")
+    return r["text"] or ""
 
 
-async def generate_images(prompt, n_images=4):
-    r = await openai.Image.acreate(prompt=prompt, n=n_images, size="512x512")
+async def generate_images(prompt, n_images=4, size="512x512"):
+    r = await cl_async.images.generate(prompt=prompt, n=n_images, size=size)
     image_urls = [item.url for item in r.data]
     return image_urls
 
 
 async def is_content_acceptable(prompt):
-    r = await openai.Moderation.acreate(input=prompt)
+    r = await cl_async.moderations.create(input=prompt)
     return not all(r.results[0].categories.values())
