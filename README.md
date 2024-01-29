@@ -62,7 +62,7 @@ docker push maindian/meowgpt:office
 
 !run next command on server!
 - stop previous containers (docker ps + docker stop + docker rm)
-- remove old image (docker rmi)
+- remove old image (docker images + docker rmi)
 - dl actual image from dockerhub:
 ```bash
 docker pull maindian/meowgpt:office 
