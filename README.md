@@ -53,7 +53,7 @@ docker-compose -f env_home/docker-compose_home.yml --env-file env_home/config/co
 
 4c. **Office version**:
 - Launch docker application
-- Creating image and uploading it to DockerHub:
+- Creating image and uploading it to DockerHub (run command separatly! + may be delete tag on docker site):
 ```bash
 docker build -f Dockerfile_office -t maindian/meowgpt:office .
 docker push maindian/meowgpt:office
