@@ -67,7 +67,7 @@ docker push maindian/meowgpt:office
 ```bash
 docker pull maindian/meowgpt:office 
 ```
-- if there some changes in env files: check it actual and read hint file on linux VM
+- if there are some changes in env files: check they are actual and read hint file on linux VM
 - Building container based on images from DockerHub (described in yml-file):
   on current VM (and check notes file on linux VM):
 ```bash
